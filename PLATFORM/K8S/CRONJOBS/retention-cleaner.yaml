@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: skylight-engineer-mailreader-retention-cleaner
+  namespace: skylight-engineer-mailreader
+spec:
+  schedule: "*/30 * * * *"   # 30 dakikada bir
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: cleaner
+            image: postgres:16-alpine
+            envFrom:
+            - secretRef:
+                name: postgres-secret
+            command:
+              - sh
+              - -lc
+              - |
+                psql "host=skylight-engineer-mailreader-postgres port=5432 dbname=$POSTGRES_DB user=$POSTGRES_USER password=$POSTGRES_PASSWORD" \
+                  -c "DELETE FROM emails WHERE expires_at < now();"

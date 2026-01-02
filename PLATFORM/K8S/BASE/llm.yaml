@@ -15,8 +15,7 @@ spec:
     spec:
       containers:
       - name: llama-cpp
-        image: ghcr.io/ggerganov/llama.cpp:latest
-        command: ["llama-server"]
+        image: ghcr.io/ggml-org/llama.cpp:server
         args:
           - -m
           - /models/qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf

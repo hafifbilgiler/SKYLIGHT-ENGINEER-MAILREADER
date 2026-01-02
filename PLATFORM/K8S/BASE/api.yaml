@@ -1,1 +1,44 @@
-aaaa
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skylight-engineer-mailreader-api
+  namespace: skylight-engineer-mailreader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skylight-engineer-mailreader-api
+  template:
+    metadata:
+      labels:
+        app: skylight-engineer-mailreader-api
+    spec:
+      containers:
+      - name: api
+        image: quay.io/hafifbilgiler/skylight-engineer-mailreader-api:0.1
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: postgresql+psycopg2://mailreader:mailreaderpass@skylight-engineer-mailreader-postgres:5432/mailreader
+        - name: MAILREADER_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mailreader-secret
+              key: master-key
+        - name: LLM_BASE_URL
+          value: http://skylight-engineer-mailreader-llm:8080
+        - name: RETENTION_DAYS
+          value: "3"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skylight-engineer-mailreader-api
+  namespace: skylight-engineer-mailreader
+spec:
+  selector:
+    app: skylight-engineer-mailreader-api
+  ports:
+  - port: 8000
+    targetPort: 8000

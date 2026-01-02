@@ -1,1 +1,53 @@
-aaaaa
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: skylight-engineer-mailreader-postgres-pvc
+  namespace: skylight-engineer-mailreader
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skylight-engineer-mailreader-postgres
+  namespace: skylight-engineer-mailreader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skylight-engineer-mailreader-postgres
+  template:
+    metadata:
+      labels:
+        app: skylight-engineer-mailreader-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: pgdata
+        persistentVolumeClaim:
+          claimName: skylight-engineer-mailreader-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skylight-engineer-mailreader-postgres
+  namespace: skylight-engineer-mailreader
+spec:
+  selector:
+    app: skylight-engineer-mailreader-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
