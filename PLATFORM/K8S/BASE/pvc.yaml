@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: skylight-engineer-mailreader-llm-model-pvc
+  namespace: skylight-engineer-mailreader
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 15Gi
