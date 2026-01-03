@@ -4,7 +4,7 @@
 import os
 import time
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
 #==========================VARIABLES
@@ -19,11 +19,13 @@ def CREATE_ENGINE():
                 DATABASE_URL,
                 pool_pre_ping=True
             )
-            # test connection
+            # SQLAlchemy 2.x requires text()
             with ENGINE.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))
+
             logging.info("DATABASE CONNECTION SUCCESSFUL")
             return ENGINE
+
         except OperationalError as ERR:
             logging.warning("DATABASE NOT READY, RETRYING...")
             time.sleep(RETRY_INTERVAL)

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: docker.io/hafifbilgiler/skylight-engineer-mailreader-api:0.7
+        image: docker.io/hafifbilgiler/skylight-engineer-mailreader-api:1.0
         ports:
         - containerPort: 8000
         env:

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailreader-ui
+  namespace: skylight-engineer-mailreader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailreader-ui
+  template:
+    metadata:
+      labels:
+        app: mailreader-ui
+    spec:
+      containers:
+      - name: mailreader-ui
+        image: hafifbilgiler/skylight-engineer-mailreader-ui:1.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MAILREADER_API_URL
+          value: "http://mailreader-api:8000"

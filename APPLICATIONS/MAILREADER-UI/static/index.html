@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Skylight Engineer – MailReader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #020617;
+      --sidebar: #020617;
+      --border: #1e293b;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --primary: #2563eb;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --radius: 12px;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
+    }
+
+    * { box-sizing: border-box; font-family: var(--font); }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 32px;
+    }
+
+    .nav a {
+      display: block;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      color: var(--muted);
+      text-decoration: none;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .nav a.active, .nav a:hover {
+      background: #020617;
+      color: var(--text);
+    }
+
+    .main {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    h1 { margin-top: 0; margin-bottom: 24px; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 700px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: #020617;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      color: white;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      text-align: left;
+    }
+
+    th { color: var(--muted); }
+
+    pre {
+      margin-top: 16px;
+      background: #020617;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    .hidden { display: none; }
+    .success { color: var(--success); }
+    .error { color: var(--danger); }
+  </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">Skylight Engineer</div>
+  <nav class="nav">
+    <a class="active" onclick="showView('add')">Add Account</a>
+    <a onclick="showView('list')">Accounts</a>
+    <a onclick="showView('rules')">Rules</a>
+    <a onclick="showView('emails')">Emails</a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ADD ACCOUNT -->
+<section id="view-add">
+  <h1>Add Mail Account</h1>
+  <div class="card">
+    <div class="form-group">
+      <label>Email</label>
+      <input id="email">
+    </div>
+    <div class="form-group">
+      <label>IMAP Host</label>
+      <input id="imap_host" value="imap.gmail.com">
+    </div>
+    <div class="form-group">
+      <label>IMAP Port</label>
+      <input id="imap_port" value="993">
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input id="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="password" type="password">
+    </div>
+
+    <button onclick="createAccount()">Create Account</button>
+    <pre id="result"></pre>
+  </div>
+</section>
+
+<!-- ACCOUNTS -->
+<section id="view-list" class="hidden">
+  <h1>Accounts</h1>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Auth Method</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody id="accounts-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- RULES -->
+<section id="view-rules" class="hidden">
+  <h1>Rules</h1>
+  <div class="card">
+
+    <div class="form-group">
+      <label>Account</label>
+      <select id="rule-account"></select>
+    </div>
+
+    <div class="form-group">
+      <label>Rule Name</label>
+      <input id="rule-name">
+    </div>
+
+    <div class="form-group">
+      <label>Field</label>
+      <select id="rule-field">
+        <option value="subject">Subject</option>
+        <option value="from">From</option>
+        <option value="to">To</option>
+        <option value="body">Body</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Contains</label>
+      <input id="rule-contains">
+    </div>
+
+    <div class="form-group">
+      <label>Action</label>
+      <select id="rule-action">
+        <option value="important">Important</option>
+        <option value="spam">Spam</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Priority</label>
+      <input id="rule-priority" value="50">
+    </div>
+
+    <button onclick="createRule()">Create Rule</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Match</th>
+          <th>Action</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody id="rules-body"></tbody>
+    </table>
+
+  </div>
+</section>
+
+<!-- EMAILS -->
+<section id="view-emails" class="hidden">
+  <h1>Emails</h1>
+  <div class="card">
+    <p style="color:var(--muted)">Emails worker bağlanınca listelenecek.</p>
+  </div>
+</section>
+
+</main>
+
+<!-- 🔑 RUNTIME ENV -->
+<script src="/env.js"></script>
+
+<script>
+const API_BASE = window.RUNTIME_CONFIG.API_BASE;
+
+function showView(view) {
+  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+  document.querySelectorAll(".nav a").forEach(a => a.classList.remove("active"));
+
+  document.getElementById("view-" + view).classList.remove("hidden");
+
+  const idx = { add:0, list:1, rules:2, emails:3 }[view];
+  document.querySelectorAll(".nav a")[idx].classList.add("active");
+
+  if (view === "list") loadAccounts();
+  if (view === "rules") loadRuleAccounts();
+}
+
+async function createAccount() {
+  const data = {
+    email: email.value,
+    imap_host: imap_host.value,
+    imap_port: Number(imap_port.value),
+    username: username.value,
+    password: password.value
+  };
+
+  const resBox = document.getElementById("result");
+  resBox.textContent = "Sending...";
+
+  const res = await fetch(API_BASE + "/accounts/imap", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  resBox.textContent = JSON.stringify(await res.json(), null, 2);
+}
+
+async function loadAccounts() {
+  const res = await fetch(API_BASE + "/accounts");
+  const data = await res.json();
+
+  const body = document.getElementById("accounts-body");
+  body.innerHTML = "";
+
+  data.forEach(a => {
+    body.innerHTML += `
+      <tr>
+        <td>${a.email}</td>
+        <td>${a.auth_method}</td>
+        <td>${new Date(a.created_at).toLocaleString()}</td>
+      </tr>`;
+  });
+}
+
+/* ===== RULES JS ===== */
+
+async function loadRuleAccounts() {
+  const res = await fetch(API_BASE + "/accounts");
+  const data = await res.json();
+
+  const sel = document.getElementById("rule-account");
+  sel.innerHTML = "";
+
+  data.forEach(a => {
+    sel.innerHTML += `<option value="${a.id}">${a.email}</option>`;
+  });
+
+  if (data.length) loadRules();
+}
+
+async function createRule() {
+  const payload = {
+    account_id: document.getElementById("rule-account").value,
+    name: document.getElementById("rule-name").value,
+    field: document.getElementById("rule-field").value,
+    contains: document.getElementById("rule-contains").value,
+    action: document.getElementById("rule-action").value,
+    priority: Number(document.getElementById("rule-priority").value)
+  };
+
+  await fetch(API_BASE + "/rules", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  loadRules();
+}
+
+async function loadRules() {
+  const acc = document.getElementById("rule-account").value;
+  const res = await fetch(`${API_BASE}/rules?account_id=${acc}`);
+  const data = await res.json();
+
+  const body = document.getElementById("rules-body");
+  body.innerHTML = "";
+
+  data.forEach(r => {
+    body.innerHTML += `
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.field} contains "${r.contains}"</td>
+        <td>${r.action}</td>
+        <td>${r.priority}</td>
+      </tr>`;
+  });
+}
+</script>
+
+</body>
+</html>

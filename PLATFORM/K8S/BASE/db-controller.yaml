@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: db-controller
-        image: docker.io/hafifbilgiler/skylight-engineer-mailreader-db-controller:0.1
+        image: docker.io/hafifbilgiler/skylight-engineer-mailreader-db-controller:0.5
         imagePullPolicy: Always
         env:
         - name: DATABASE_URL

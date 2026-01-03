@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailreader-ui
+  namespace: skylight-engineer-mailreader
+spec:
+  selector:
+    app: mailreader-ui
+  ports:
+  - port: 80
+    targetPort: 8080

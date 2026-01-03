@@ -5,21 +5,32 @@ from sqlalchemy import select
 
 import requests
 from urllib.parse import urlencode
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.config import RETENTION_DAYS
 from app.db.session import SessionLocal, engine
 from app.db.models import Base, Account, Secret, Rule
 from app.security.encryption import encrypt_payload, decrypt_payload
 from app.routes import emails
+from app.routes import rules
 
 
 # 🔑 FastAPI app MUTLAKA ÖNCE TANIMLANIR
 app = FastAPI(title="Skylight Engineer MailReader API")
 
 
-# 🔹 ROUTERS (app tanımından SONRA)
-app.include_router(emails.router)
+# ========================== CORS ==========================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],        # şimdilik açık (prod'da daraltırız)
+    allow_credentials=True,
+    allow_methods=["*"],        # POST, GET, OPTIONS vs
+    allow_headers=["*"],        # Content-Type, Authorization
+)
+# =========================================================
 
+
+app.include_router(emails.router)
+app.include_router(rules.router)
 
 @app.on_event("startup")
 def on_startup():
