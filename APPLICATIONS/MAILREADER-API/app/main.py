@@ -10,9 +10,15 @@ from app.config import RETENTION_DAYS
 from app.db.session import SessionLocal, engine
 from app.db.models import Base, Account, Secret, Rule
 from app.security.encryption import encrypt_payload, decrypt_payload
+from app.routes import emails
 
 
+# 🔑 FastAPI app MUTLAKA ÖNCE TANIMLANIR
 app = FastAPI(title="Skylight Engineer MailReader API")
+
+
+# 🔹 ROUTERS (app tanımından SONRA)
+app.include_router(emails.router)
 
 
 @app.on_event("startup")
@@ -39,7 +45,10 @@ class ImapAccountCreate(BaseModel):
 @app.post("/accounts/imap")
 def create_imap_account(req: ImapAccountCreate):
     with SessionLocal() as db:
-        exists = db.execute(select(Account).where(Account.email == req.email)).scalar_one_or_none()
+        exists = db.execute(
+            select(Account).where(Account.email == req.email)
+        ).scalar_one_or_none()
+
         if exists:
             raise HTTPException(status_code=409, detail="Account already exists")
 
@@ -52,10 +61,9 @@ def create_imap_account(req: ImapAccountCreate):
             "imap_host": req.imap_host,
             "imap_port": req.imap_port,
             "username": req.username,
-            "password": req.password,  # encrypted in DB
+            "password": req.password,  # encrypted
         }
-        sec = Secret(account_id=acc.id, enc_payload=encrypt_payload(payload))
-        db.add(sec)
+        db.add(Secret(account_id=acc.id, enc_payload=encrypt_payload(payload)))
 
         # default rule: direct to me => important
         db.add(Rule(
@@ -90,14 +98,11 @@ class ExchangeStart(BaseModel):
 
 @app.post("/accounts/exchange/start")
 def exchange_start(req: ExchangeStart):
-    """
-    UI buraya tenant_id, client_id, client_secret, redirect_uri gönderir.
-    Biz:
-      - account + secret oluştururuz (refresh_token henüz yok)
-      - auth_url döneriz
-    """
     with SessionLocal() as db:
-        exists = db.execute(select(Account).where(Account.email == req.email)).scalar_one_or_none()
+        exists = db.execute(
+            select(Account).where(Account.email == req.email)
+        ).scalar_one_or_none()
+
         if exists:
             raise HTTPException(status_code=409, detail="Account already exists")
 
@@ -116,7 +121,6 @@ def exchange_start(req: ExchangeStart):
         }
         db.add(Secret(account_id=acc.id, enc_payload=encrypt_payload(payload)))
 
-        # (opsiyonel) direct rule
         db.add(Rule(
             account_id=acc.id,
             name="direct_to_me",
@@ -132,7 +136,7 @@ def exchange_start(req: ExchangeStart):
             tenant_id=req.tenant_id,
             client_id=req.client_id,
             redirect_uri=req.redirect_uri,
-            state=str(acc.id)  # state = account_id
+            state=str(acc.id)
         )
 
         return {
@@ -159,16 +163,18 @@ def _build_ms_authorize_url(tenant_id: str, client_id: str, redirect_uri: str, s
 # -----------------------------------------
 @app.get("/oauth/microsoft/callback")
 def microsoft_callback(code: str, state: str):
-    """
-    state = account_id (uuid string)
-    code = Microsoft’un verdiği authorization code
-    """
     with SessionLocal() as db:
-        acc = db.execute(select(Account).where(Account.id == state)).scalar_one_or_none()
+        acc = db.execute(
+            select(Account).where(Account.id == state)
+        ).scalar_one_or_none()
+
         if not acc:
             raise HTTPException(status_code=404, detail="Account not found")
 
-        sec = db.execute(select(Secret).where(Secret.account_id == acc.id)).scalar_one_or_none()
+        sec = db.execute(
+            select(Secret).where(Secret.account_id == acc.id)
+        ).scalar_one_or_none()
+
         if not sec:
             raise HTTPException(status_code=404, detail="Secret not found")
 
@@ -177,8 +183,7 @@ def microsoft_callback(code: str, state: str):
         if payload.get("auth_method") != "exchange":
             raise HTTPException(status_code=400, detail="Account is not exchange type")
 
-        tenant_id = payload["tenant_id"]
-        token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+        token_url = f"https://login.microsoftonline.com/{payload['tenant_id']}/oauth2/v2.0/token"
 
         data = {
             "client_id": payload["client_id"],
@@ -191,14 +196,13 @@ def microsoft_callback(code: str, state: str):
 
         r = requests.post(token_url, data=data, timeout=30)
         if r.status_code >= 400:
-            raise HTTPException(status_code=400, detail=f"Token exchange failed: {r.text}")
+            raise HTTPException(status_code=400, detail=r.text)
 
         token = r.json()
-        refresh_token = token.get("refresh_token")
-        if not refresh_token:
-            raise HTTPException(status_code=400, detail="refresh_token not returned (check offline_access + consent)")
+        if "refresh_token" not in token:
+            raise HTTPException(status_code=400, detail="refresh_token not returned")
 
-        payload["refresh_token"] = refresh_token
+        payload["refresh_token"] = token["refresh_token"]
         sec.enc_payload = encrypt_payload(payload)
         db.commit()
 
@@ -223,4 +227,7 @@ def list_accounts():
 
 @app.get("/retention")
 def retention_info():
-    return {"retention_days": RETENTION_DAYS, "policy": "emails are deleted after expires_at < now()"}
+    return {
+        "retention_days": RETENTION_DAYS,
+        "policy": "emails are deleted after expires_at < now()"
+    }

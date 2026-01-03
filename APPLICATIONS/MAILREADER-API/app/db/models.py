@@ -57,3 +57,41 @@ class Rule(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     account = relationship("Account", back_populates="rules")
+
+
+class Email(Base):
+    __tablename__ = "emails"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        index=True
+    )
+
+    message_id: Mapped[str] = mapped_column(String(512), index=True)
+
+    from_addr: Mapped[str] = mapped_column(String(512))
+    to_addr: Mapped[str] = mapped_column(String(512))
+
+    subject: Mapped[str] = mapped_column(String(1024))
+
+    category: Mapped[str] = mapped_column(String(32))  # important | normal | spam
+    confidence: Mapped[int] = mapped_column(Integer)
+    reason: Mapped[str] = mapped_column(String(256))
+
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        index=True
+    )
+
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        index=True
+    )

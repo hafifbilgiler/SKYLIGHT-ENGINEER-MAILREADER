@@ -4,7 +4,7 @@ metadata:
   name: skylight-engineer-mailreader-worker
   namespace: skylight-engineer-mailreader
 spec:
-  schedule: "*/10 * * * *"   # 10 dakikada bir
+  schedule: "*/10 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
@@ -16,7 +16,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: worker
-            image: docker.io/hafifbilgiler/skylight-engineer-mailreader-worker:0.1
+            image: docker.io/hafifbilgiler/skylight-engineer-mailreader-worker:0.2
             imagePullPolicy: Always
             env:
             - name: DATABASE_URL
