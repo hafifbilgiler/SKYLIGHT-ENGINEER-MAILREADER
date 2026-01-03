@@ -20,4 +20,4 @@ spec:
         - containerPort: 8080
         env:
         - name: MAILREADER_API_URL
-          value: "http://mailreader-api:8000"
+          value: "http://skylight-engineer-mailreader-api:8000"
