@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skylight-engineer-mailreader-db-controller
+  namespace: skylight-engineer-mailreader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailreader-db-controller
+  template:
+    metadata:
+      labels:
+        app: mailreader-db-controller
+    spec:
+      containers:
+      - name: db-controller
+        image: docker.io/hafifbilgiler/skylight-engineer-mailreader-db-controller:0.1
+        imagePullPolicy: Always
+        env:
+        - name: DATABASE_URL
+          value: postgresql+psycopg2://mailreader:mailreaderpass@skylight-engineer-mailreader-postgres:5432/mailreader
+        - name: CHECK_INTERVAL
+          value: "60"
+        - name: DB_RETRY_INTERVAL
+          value: "5"
