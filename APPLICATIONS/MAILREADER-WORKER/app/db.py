@@ -55,24 +55,34 @@ def insert_email(mail: dict) -> bool:
     Duplicate-safe insert (account_id + message_id).
     Returns True if inserted, False if skipped.
     """
-    with engine.begin() as c:
-        # Skip if message_id empty (still allow insert? => we skip to avoid spam duplicates)
-        if not mail.get("message_id"):
-            return False
+    if not mail.get("message_id"):
+        return False
 
-        # Atomic-ish "insert if not exists"
+    mail_id = str(uuid.uuid4())
+
+    with engine.begin() as c:
         res = c.execute(text("""
             INSERT INTO emails
-            (account_id, message_id, from_addr, to_addr, subject,
+            (id, account_id, message_id, from_addr, to_addr, subject,
              category, confidence, reason, received_at, expires_at)
             SELECT
-            :account_id, :message_id, :from_addr, :to_addr, :subject,
+            :id, :account_id, :message_id, :from_addr, :to_addr, :subject,
             :category, :confidence, :reason, now(), :expires_at
             WHERE NOT EXISTS (
                 SELECT 1 FROM emails
                 WHERE account_id = :account_id AND message_id = :message_id
             )
-        """), mail)
+        """), {
+            "id": mail_id,
+            "account_id": mail["account_id"],
+            "message_id": mail["message_id"],
+            "from_addr": mail["from_addr"],
+            "to_addr": mail["to_addr"],
+            "subject": mail["subject"],
+            "category": mail["category"],
+            "confidence": mail["confidence"],
+            "reason": mail["reason"],
+            "expires_at": mail["expires_at"],
+        })
 
-        # res.rowcount = 1 => inserted, 0 => skipped
         return (res.rowcount or 0) > 0

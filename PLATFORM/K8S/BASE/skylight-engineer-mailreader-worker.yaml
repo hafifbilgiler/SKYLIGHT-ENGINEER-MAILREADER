@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skylight-engineer-mailreader-worker
+  namespace: skylight-engineer-mailreader
+  labels:
+    app: skylight-engineer-mailreader-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skylight-engineer-mailreader-worker
+  template:
+    metadata:
+      labels:
+        app: skylight-engineer-mailreader-worker
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: worker
+          image: docker.io/hafifbilgiler/skylight-engineer-mailreader-worker:0.3
+          imagePullPolicy: Always
+          env:
+            # ================== CORE ==================
+            - name: DATABASE_URL
+              value: postgresql+psycopg2://mailreader:mailreaderpass@skylight-engineer-mailreader-postgres:5432/mailreader
+            - name: MAILREADER_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mailreader-secret
+                  key: master-key
+            # ================== WORKER ==================
+            - name: FETCH_INTERVAL
+              value: "60"          # seconds
+            - name: FETCH_LIMIT
+              value: "10"          # mails per cycle
+            - name: RETENTION_DAYS
+              value: "3"
+            # ================== LLM ==================
+            - name: LLM_BASE_URL
+              value: http://skylight-engineer-mailreader-llm:8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
