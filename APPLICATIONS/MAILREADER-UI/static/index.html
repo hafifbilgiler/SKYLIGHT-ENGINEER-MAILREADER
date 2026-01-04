@@ -257,12 +257,43 @@
 </section>
 
 <!-- EMAILS -->
+<!-- EMAILS -->
 <section id="view-emails" class="hidden">
   <h1>Emails</h1>
+
   <div class="card">
-    <p style="color:var(--muted)">Emails worker bağlanınca listelenecek.</p>
+
+    <div class="form-group">
+      <label>Account</label>
+      <select id="email-account"></select>
+    </div>
+
+    <div class="form-group">
+      <label>Category</label>
+      <select id="email-category" onchange="loadEmails()">
+        <option value="">All</option>
+        <option value="important">Important</option>
+        <option value="normal">Normal</option>
+        <option value="spam">Spam</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>From</th>
+          <th>Subject</th>
+          <th>Category</th>
+          <th>Confidence</th>
+          <th>Received</th>
+        </tr>
+      </thead>
+      <tbody id="emails-body"></tbody>
+    </table>
+
   </div>
 </section>
+
 
 </main>
 
@@ -376,6 +407,47 @@ async function loadRules() {
       </tr>`;
   });
 }
+/* ===== EMAILS JS ===== */
+
+async function loadEmailAccounts() {
+  const res = await fetch(API_BASE + "/accounts");
+  const data = await res.json();
+
+  const sel = document.getElementById("email-account");
+  sel.innerHTML = "";
+
+  data.forEach(a => {
+    sel.innerHTML += `<option value="${a.id}">${a.email}</option>`;
+  });
+
+  if (data.length) loadEmails();
+}
+
+async function loadEmails() {
+  const acc = document.getElementById("email-account").value;
+  const cat = document.getElementById("email-category").value;
+
+  let url = `${API_BASE}/emails?account_id=${acc}`;
+  if (cat) url += `&category=${cat}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const body = document.getElementById("emails-body");
+  body.innerHTML = "";
+
+  data.forEach(e => {
+    body.innerHTML += `
+      <tr>
+        <td>${e.from}</td>
+        <td>${e.subject}</td>
+        <td>${e.category}</td>
+        <td>${e.confidence}</td>
+        <td>${new Date(e.received_at).toLocaleString()}</td>
+      </tr>`;
+  });
+}
+
 </script>
 
 </body>
