@@ -1,4 +1,5 @@
 import os
+import uuid
 from sqlalchemy import create_engine, text
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.session import SessionLocal
 from app.db.models import Email
 from datetime import datetime
@@ -7,12 +7,15 @@ from datetime import datetime
 router = APIRouter(prefix="/emails", tags=["emails"])
 
 
+# =========================================================
+# LIST EMAILS (GENEL LİSTE)
+# =========================================================
 @router.get("")
 def list_emails(
     account_id: str,
     category: str | None = None,
-    limit: int = Query(50, le=200),
-    offset: int = 0
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0)
 ):
     with SessionLocal() as db:
         q = select(Email).where(Email.account_id == account_id)
@@ -32,14 +35,20 @@ def list_emails(
                 "category": e.category,
                 "confidence": e.confidence,
                 "reason": e.reason,
-                "received_at": e.received_at.isoformat()
+                "received_at": e.received_at.isoformat(),
             }
             for e in rows
         ]
 
 
+# =========================================================
+# IMPORTANT EMAILS (DASHBOARD / UI KARTLARI İÇİN)
+# =========================================================
 @router.get("/important")
-def important_emails(account_id: str, limit: int = 20):
+def important_emails(
+    account_id: str,
+    limit: int = Query(20, ge=1, le=100)
+):
     with SessionLocal() as db:
         q = (
             select(Email)
@@ -56,12 +65,15 @@ def important_emails(account_id: str, limit: int = 20):
                 "from": e.from_addr,
                 "subject": e.subject,
                 "confidence": e.confidence,
-                "received_at": e.received_at.isoformat()
+                "received_at": e.received_at.isoformat(),
             }
             for e in rows
         ]
 
 
+# =========================================================
+# LATEST EMAIL (HEADER / WIDGET İÇİN)
+# =========================================================
 @router.get("/latest")
 def latest_email(account_id: str):
     with SessionLocal() as db:
@@ -77,9 +89,36 @@ def latest_email(account_id: str):
             return None
 
         return {
+            "id": str(e.id),
             "from": e.from_addr,
             "subject": e.subject,
             "category": e.category,
             "confidence": e.confidence,
-            "received_at": e.received_at.isoformat()
+            "reason": e.reason,
+            "received_at": e.received_at.isoformat(),
+        }
+
+
+# =========================================================
+# EMAIL COUNT (UI BADGE / STAT)
+# =========================================================
+@router.get("/count")
+def email_count(
+    account_id: str,
+    category: str | None = None
+):
+    with SessionLocal() as db:
+        q = select(func.count()).select_from(Email).where(
+            Email.account_id == account_id
+        )
+
+        if category:
+            q = q.where(Email.category == category)
+
+        total = db.execute(q).scalar()
+
+        return {
+            "account_id": account_id,
+            "category": category,
+            "count": total,
         }

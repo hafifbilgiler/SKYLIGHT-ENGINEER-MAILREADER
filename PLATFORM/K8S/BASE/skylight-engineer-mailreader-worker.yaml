@@ -18,7 +18,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: worker
-          image: docker.io/hafifbilgiler/skylight-engineer-mailreader-worker:0.3
+          image: docker.io/hafifbilgiler/skylight-engineer-mailreader-worker:0.5
           imagePullPolicy: Always
           env:
             # ================== CORE ==================
