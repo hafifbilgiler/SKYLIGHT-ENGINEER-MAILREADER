@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: mailreader-ui
-        image: hafifbilgiler/skylight-engineer-mailreader-ui:1.0
+        image: hafifbilgiler/skylight-engineer-mailreader-ui:1.8
         ports:
         - containerPort: 8080
         env:

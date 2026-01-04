@@ -11,6 +11,7 @@ router = APIRouter(prefix="/emails", tags=["emails"])
 # LIST EMAILS (GENEL LİSTE)
 # =========================================================
 @router.get("")
+@router.get("/")
 def list_emails(
     account_id: str,
     category: str | None = None,

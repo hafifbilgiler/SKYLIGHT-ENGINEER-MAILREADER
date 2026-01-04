@@ -81,6 +81,36 @@ def ENSURE_COLUMNS(ENGINE):
                 ALTER TABLE accounts
                 ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
             """))
+            #==========================EMAILS AI COLUMNS
+            CONN.execute(text("""
+                ALTER TABLE emails
+                ADD COLUMN IF NOT EXISTS ai_category VARCHAR(32);
+            """))
+
+            CONN.execute(text("""
+                ALTER TABLE emails
+                ADD COLUMN IF NOT EXISTS ai_confidence FLOAT;
+            """))
+
+            CONN.execute(text("""
+                ALTER TABLE emails
+                ADD COLUMN IF NOT EXISTS ai_summary TEXT;
+            """))
+
+            CONN.execute(text("""
+                ALTER TABLE emails
+                ADD COLUMN IF NOT EXISTS ai_model VARCHAR(128);
+            """))
+
+            CONN.execute(text("""
+                ALTER TABLE emails
+                ADD COLUMN IF NOT EXISTS matched_rule VARCHAR(128);
+            """))
+
+            CONN.execute(text("""
+                ALTER TABLE emails
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+            """))
 
         logging.info("DB SCHEMA DRIFT FIXED")
         return 1

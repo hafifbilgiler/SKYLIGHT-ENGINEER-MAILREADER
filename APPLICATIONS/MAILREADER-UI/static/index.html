@@ -265,7 +265,7 @@
 
     <div class="form-group">
       <label>Account</label>
-      <select id="email-account"></select>
+      <select id="email-account" onchange="loadEmails()"></select>
     </div>
 
     <div class="form-group">
@@ -314,6 +314,7 @@ function showView(view) {
 
   if (view === "list") loadAccounts();
   if (view === "rules") loadRuleAccounts();
+  if (view === "emails") loadEmailAccounts();
 }
 
 async function createAccount() {
@@ -427,14 +428,23 @@ async function loadEmails() {
   const acc = document.getElementById("email-account").value;
   const cat = document.getElementById("email-category").value;
 
-  let url = `${API_BASE}/emails?account_id=${acc}`;
-  if (cat) url += `&category=${cat}`;
+  // ✅ kritik: /emails/ (slash var)
+  let url = `${API_BASE}/emails/?account_id=${encodeURIComponent(acc)}`;
+
+  // ✅ category varsa ekle
+  if (cat) url += `&category=${encodeURIComponent(cat)}`;
 
   const res = await fetch(url);
   const data = await res.json();
 
   const body = document.getElementById("emails-body");
   body.innerHTML = "";
+
+  // güvenlik: array değilse patlamasın
+  if (!Array.isArray(data)) {
+    body.innerHTML = `<tr><td colspan="5">API error: ${JSON.stringify(data)}</td></tr>`;
+    return;
+  }
 
   data.forEach(e => {
     body.innerHTML += `
