@@ -388,16 +388,47 @@ async function loadAccounts() {
   body.innerHTML = "";
 
   data.forEach(a => {
-    body.innerHTML += `
-      <tr>
-        <td>${a.email}</td>
-        <td>${a.auth_method}</td>
-        <td>${new Date(a.created_at).toLocaleString()}</td>
-      </tr>`;
-  });
+  body.innerHTML += `
+    <tr>
+      <td>${a.email}</td>
+      <td>${a.auth_method}</td>
+      <td>${new Date(a.created_at).toLocaleString()}</td>
+      <td>
+        <button
+          style="background:#ef4444;padding:6px 10px;border-radius:8px"
+          onclick="deleteAccount('${a.id}')">
+          ✕
+        </button>
+      </td>
+    </tr>`;
+});
+
 }
 
 /* ===== RULES JS ===== */
+
+async function deleteAccount(accountId) {
+  if (!confirm("Bu account silinsin mi?")) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/accounts/${accountId}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      alert("Delete failed: " + err);
+      return;
+    }
+
+    alert("Account deleted");
+    loadAccounts(); // tabloyu yenile
+  } catch (e) {
+    alert("API error: " + e.message);
+  }
+}
 
 async function loadRuleAccounts() {
   const res = await fetch(API_BASE + "/accounts");

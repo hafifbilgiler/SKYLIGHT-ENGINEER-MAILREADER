@@ -63,6 +63,13 @@ def get_accounts():
     r = requests.get(f"{MAILREADER_API_URL}/accounts", timeout=10)
     return proxy_response(r)
 
+@app.delete("/accounts/{account_id}")
+def delete_account(account_id: str):
+    r = requests.delete(
+        f"{MAILREADER_API_URL}/accounts/{account_id}",
+        timeout=10
+    )
+    return proxy_response(r)
 
 @app.post("/accounts/imap")
 async def create_account(req: Request):
