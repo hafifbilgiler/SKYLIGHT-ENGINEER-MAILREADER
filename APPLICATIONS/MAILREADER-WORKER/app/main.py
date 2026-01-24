@@ -11,7 +11,6 @@ from app.security import decrypt_payload, encrypt_payload
 from app.graph_client import refresh_access_token, fetch_graph_mails
 from app.imap_client import fetch_imap_mails
 
-
 # ========================== CONFIG ==========================
 FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL", "60"))
 FETCH_LIMIT = int(os.getenv("FETCH_LIMIT", "10"))
@@ -30,11 +29,12 @@ def INTRO():
 def process_account(acc: dict):
     rules = get_rules(acc["id"])
 
-    secrets = decrypt_payload(acc["enc_payload"])  # dict
+    secrets = decrypt_payload(acc["enc_payload"])
     auth_method = (acc.get("auth_method") or secrets.get("auth_method") or "imap").lower()
 
     mails = []
 
+    # -------- EXCHANGE --------
     if auth_method == "exchange":
         tenant_id = secrets.get("tenant_id", "")
         client_id = secrets.get("client_id", "")
@@ -45,10 +45,11 @@ def process_account(acc: dict):
             logging.warning(f"EXCHANGE CONFIG MISSING for {acc['email']}")
             return
 
-        token_json = refresh_access_token(tenant_id, client_id, client_secret, refresh_token)
+        token_json = refresh_access_token(
+            tenant_id, client_id, client_secret, refresh_token
+        )
         access_token = token_json.get("access_token", "")
 
-        # refresh_token may rotate
         new_refresh = token_json.get("refresh_token")
         if new_refresh and new_refresh != refresh_token:
             secrets["refresh_token"] = new_refresh
@@ -57,11 +58,11 @@ def process_account(acc: dict):
 
         mails = fetch_graph_mails(access_token, limit=FETCH_LIMIT)
 
-        # normalize if to missing
         for m in mails:
             m.setdefault("to", acc["email"])
             m.setdefault("body", "")
 
+    # -------- IMAP --------
     elif auth_method == "imap":
         host = secrets.get("imap_host", "")
         username = secrets.get("username", "")
@@ -80,7 +81,6 @@ def process_account(acc: dict):
             limit=FETCH_LIMIT
         )
 
-        # normalize
         for m in mails:
             m["to"] = acc["email"]
             m.setdefault("body", "")
@@ -93,16 +93,23 @@ def process_account(acc: dict):
         logging.info(f"NO MAILS for {acc['email']}")
         return
 
+    # ================== MAIL PIPELINE ==================
     for m in mails:
-        # 1) RULE OVERRIDE
+        # 1️⃣ RULE ENGINE (ÖNCE)
         action, rule_name = apply_rules(m, rules)
+
         if action:
             category = (action.get("set_category") or "normal").lower()
             confidence = 90
             reason = f"rule:{rule_name}"
+
         else:
-            # 2) LLM FALLBACK
+            # 2️⃣ LLM CLASSIFIER (🔥 ASIL AKIL BURADA)
             category, confidence, reason = classify(m)
+
+            logging.info(
+                f"LLM classified | {acc['email']} | {m.get('subject','')[:40]} → {category} ({confidence})"
+            )
 
         mail_row = {
             "account_id": acc["id"],
@@ -118,9 +125,13 @@ def process_account(acc: dict):
 
         inserted = insert_email(mail_row)
         if inserted:
-            logging.info(f"INSERTED {category.upper()} - {acc['email']} - {mail_row['subject'][:60]}")
+            logging.info(
+                f"INSERTED {category.upper()} - {acc['email']} - {mail_row['subject'][:60]}"
+            )
         else:
-            logging.info(f"SKIPPED (DUP/EMPTY) - {acc['email']} - {mail_row['subject'][:60]}")
+            logging.info(
+                f"SKIPPED (DUP/EMPTY) - {acc['email']} - {mail_row['subject'][:60]}"
+            )
 
 def run_once():
     accounts = get_accounts()
@@ -143,7 +154,6 @@ def service_loop():
             logging.error(f"RUN ERROR: {e}")
 
         time.sleep(FETCH_INTERVAL)
-
 
 if __name__ == "__main__":
     service_loop()
