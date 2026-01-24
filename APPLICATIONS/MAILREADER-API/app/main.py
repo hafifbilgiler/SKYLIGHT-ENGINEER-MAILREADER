@@ -242,3 +242,26 @@ def retention_info():
         "retention_days": RETENTION_DAYS,
         "policy": "emails are deleted after expires_at < now()"
     }
+
+@app.delete("/accounts/{account_id}")
+def delete_account(account_id: str):
+    with SessionLocal() as db:
+        acc = db.execute(
+            select(Account).where(Account.id == account_id)
+        ).scalar_one_or_none()
+
+        if not acc:
+            raise HTTPException(status_code=404, detail="Account not found")
+
+        # CASCADE varsa otomatik silinir:
+        # - Secret
+        # - Rules
+        # - Emails
+        # yoksa da SQLAlchemy ilişkiyi çözer
+        db.delete(acc)
+        db.commit()
+
+        return {
+            "status": "deleted",
+            "account_id": account_id
+        }
