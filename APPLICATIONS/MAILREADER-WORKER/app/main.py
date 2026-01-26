@@ -12,7 +12,7 @@ from app.graph_client import refresh_access_token, fetch_graph_mails
 from app.imap_client import fetch_imap_mails
 
 # ========================== CONFIG ==========================
-FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL", "60"))
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL", "10"))
 FETCH_LIMIT = int(os.getenv("FETCH_LIMIT", "10"))
 RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", "3"))
 
